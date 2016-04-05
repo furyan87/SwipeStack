@@ -69,65 +69,71 @@ public class SwipeHelper implements View.OnTouchListener {
     @Override
     public boolean onTouch(View v, MotionEvent event) {
 
-        if (gestureDetector.onTouchEvent(event)) {
-            // we want to catch the use-cases in the gesture detector
-            return true;
-        } else {
-            // otherwise do you dragging animation job
-            switch (event.getAction()) {
-                case MotionEvent.ACTION_DOWN:
-                    if (!mListenForTouchEvents || !mSwipeStack.isEnabled()) {
-                        return false;
-                    }
+        try {
 
-                    v.getParent().requestDisallowInterceptTouchEvent(true);
-                    mSwipeStack.onSwipeStart();
-                    mPointerId = event.getPointerId(0);
-                    mDownX = event.getX(mPointerId);
-                    mDownY = event.getY(mPointerId);
+            if (gestureDetector.onTouchEvent(event)) {
+                // we want to catch the use-cases in the gesture detector
+                return true;
+            } else {
+                // otherwise do you dragging animation job
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        if (!mListenForTouchEvents || !mSwipeStack.isEnabled()) {
+                            return false;
+                        }
 
-                    return true;
+                        v.getParent().requestDisallowInterceptTouchEvent(true);
+                        mSwipeStack.onSwipeStart();
+                        mPointerId = event.getPointerId(0);
+                        mDownX = event.getX(mPointerId);
+                        mDownY = event.getY(mPointerId);
 
-                case MotionEvent.ACTION_MOVE:
-                    int pointerIndex = event.findPointerIndex(mPointerId);
-                    if (pointerIndex < 0) return false;
+                        return true;
 
-                    float dx = event.getX(pointerIndex) - mDownX;
-                    float dy = event.getY(pointerIndex) - mDownY;
+                    case MotionEvent.ACTION_MOVE:
+                        int pointerIndex = event.findPointerIndex(mPointerId);
+                        if (pointerIndex < 0) return false;
 
-                    float newX = mObservedView.getX() + dx;
-                    float newY = mObservedView.getY() + dy;
+                        float dx = event.getX(pointerIndex) - mDownX;
+                        float dy = event.getY(pointerIndex) - mDownY;
 
-                    mObservedView.setX(newX);
-                    mObservedView.setY(newY);
+                        float newX = mObservedView.getX() + dx;
+                        float newY = mObservedView.getY() + dy;
 
-                    float dragDistanceX = newX - mInitialX;
-                    float swipeProgress = Math.min(Math.max(
-                            dragDistanceX / mSwipeStack.getWidth(), -1), 1);
+                        mObservedView.setX(newX);
+                        mObservedView.setY(newY);
 
-                    mSwipeStack.onSwipeProgress(swipeProgress);
+                        float dragDistanceX = newX - mInitialX;
+                        float swipeProgress = Math.min(Math.max(
+                                dragDistanceX / mSwipeStack.getWidth(), -1), 1);
 
-                    if (mRotateDegrees > 0) {
-                        float rotation = mRotateDegrees * swipeProgress;
-                        mObservedView.setRotation(rotation);
-                    }
+                        mSwipeStack.onSwipeProgress(swipeProgress);
 
-                    if (mOpacityEnd < 1f) {
-                        float alpha = 1 - Math.min(Math.abs(swipeProgress * 2), 1);
-                        mObservedView.setAlpha(alpha);
-                    }
+                        if (mRotateDegrees > 0) {
+                            float rotation = mRotateDegrees * swipeProgress;
+                            mObservedView.setRotation(rotation);
+                        }
 
-                    return true;
+                        if (mOpacityEnd < 1f) {
+                            float alpha = 1 - Math.min(Math.abs(swipeProgress * 2), 1);
+                            mObservedView.setAlpha(alpha);
+                        }
 
-                case MotionEvent.ACTION_UP:
+                        return true;
 
-                    v.getParent().requestDisallowInterceptTouchEvent(false);
-                    mSwipeStack.onSwipeEnd();
-                    checkViewPosition();
+                    case MotionEvent.ACTION_UP:
 
-                    return true;
+                        v.getParent().requestDisallowInterceptTouchEvent(false);
+                        mSwipeStack.onSwipeEnd();
+                        checkViewPosition();
 
+                        return true;
+                }
             }
+        } catch (IllegalArgumentException iae) {
+            //The same bug
+            //https://github.com/chrisbanes/PhotoView/blob/92a2a281134ceddc6e402ba4a83cc91180db8115/sample/src/uk/co/senab/photoview/sample/HackyViewPager.java
+            return false;
         }
 
         return false;
