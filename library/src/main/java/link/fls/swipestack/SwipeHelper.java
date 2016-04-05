@@ -17,6 +17,9 @@
 package link.fls.swipestack;
 
 import android.animation.Animator;
+import android.content.Context;
+import android.support.v4.view.GestureDetectorCompat;
+import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.OvershootInterpolator;
@@ -39,72 +42,99 @@ public class SwipeHelper implements View.OnTouchListener {
     private float mOpacityEnd = SwipeStack.DEFAULT_SWIPE_OPACITY;
     private int mAnimationDuration = SwipeStack.DEFAULT_ANIMATION_DURATION;
 
-    public SwipeHelper(SwipeStack swipeStack) {
+    private GestureDetectorCompat gestureDetector;
+
+    public SwipeHelper(Context context, SwipeStack swipeStack) {
         mSwipeStack = swipeStack;
+        gestureDetector = new GestureDetectorCompat(context, new SingleTapConfirm());
+        gestureDetector.setOnDoubleTapListener(new GestureDetector.OnDoubleTapListener() {
+            @Override
+            public boolean onSingleTapConfirmed(MotionEvent e) {
+                mSwipeStack.onSwipeTap();
+                return false;
+            }
+
+            @Override
+            public boolean onDoubleTap(MotionEvent e) {
+                return false;
+            }
+
+            @Override
+            public boolean onDoubleTapEvent(MotionEvent e) {
+                return false;
+            }
+        });
     }
 
     @Override
     public boolean onTouch(View v, MotionEvent event) {
 
-        switch (event.getAction()) {
-            case MotionEvent.ACTION_DOWN:
-                if(!mListenForTouchEvents || !mSwipeStack.isEnabled()) {
-                    return false;
-                }
+        if (gestureDetector.onTouchEvent(event)) {
+            // we want to catch the use-cases in the gesture detector
+            return true;
+        } else {
+            // otherwise do you dragging animation job
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    if (!mListenForTouchEvents || !mSwipeStack.isEnabled()) {
+                        return false;
+                    }
 
-                v.getParent().requestDisallowInterceptTouchEvent(true);
-                mSwipeStack.onSwipeStart();
-                mPointerId = event.getPointerId(0);
-                mDownX = event.getX(mPointerId);
-                mDownY = event.getY(mPointerId);
+                    v.getParent().requestDisallowInterceptTouchEvent(true);
+                    mSwipeStack.onSwipeStart();
+                    mPointerId = event.getPointerId(0);
+                    mDownX = event.getX(mPointerId);
+                    mDownY = event.getY(mPointerId);
 
-                return true;
+                    return true;
 
-            case MotionEvent.ACTION_MOVE:
-                int pointerIndex = event.findPointerIndex(mPointerId);
-                if (pointerIndex < 0) return false;
+                case MotionEvent.ACTION_MOVE:
+                    int pointerIndex = event.findPointerIndex(mPointerId);
+                    if (pointerIndex < 0) return false;
 
-                float dx = event.getX(pointerIndex) - mDownX;
-                float dy = event.getY(pointerIndex) - mDownY;
+                    float dx = event.getX(pointerIndex) - mDownX;
+                    float dy = event.getY(pointerIndex) - mDownY;
 
-                float newX = mObservedView.getX() + dx;
-                float newY = mObservedView.getY() + dy;
+                    float newX = mObservedView.getX() + dx;
+                    float newY = mObservedView.getY() + dy;
 
-                mObservedView.setX(newX);
-                mObservedView.setY(newY);
+                    mObservedView.setX(newX);
+                    mObservedView.setY(newY);
 
-                float dragDistanceX = newX - mInitialX;
-                float swipeProgress = Math.min(Math.max(
-                        dragDistanceX / mSwipeStack.getWidth(), -1), 1);
+                    float dragDistanceX = newX - mInitialX;
+                    float swipeProgress = Math.min(Math.max(
+                            dragDistanceX / mSwipeStack.getWidth(), -1), 1);
 
-                mSwipeStack.onSwipeProgress(swipeProgress);
+                    mSwipeStack.onSwipeProgress(swipeProgress);
 
-                if (mRotateDegrees > 0) {
-                    float rotation = mRotateDegrees * swipeProgress;
-                    mObservedView.setRotation(rotation);
-                }
+                    if (mRotateDegrees > 0) {
+                        float rotation = mRotateDegrees * swipeProgress;
+                        mObservedView.setRotation(rotation);
+                    }
 
-                if (mOpacityEnd < 1f) {
-                    float alpha = 1 - Math.min(Math.abs(swipeProgress * 2), 1);
-                    mObservedView.setAlpha(alpha);
-                }
+                    if (mOpacityEnd < 1f) {
+                        float alpha = 1 - Math.min(Math.abs(swipeProgress * 2), 1);
+                        mObservedView.setAlpha(alpha);
+                    }
 
-                return true;
+                    return true;
 
-            case MotionEvent.ACTION_UP:
-                v.getParent().requestDisallowInterceptTouchEvent(false);
-                mSwipeStack.onSwipeEnd();
-                checkViewPosition();
+                case MotionEvent.ACTION_UP:
 
-                return true;
+                    v.getParent().requestDisallowInterceptTouchEvent(false);
+                    mSwipeStack.onSwipeEnd();
+                    checkViewPosition();
 
+                    return true;
+
+            }
         }
 
         return false;
     }
 
     private void checkViewPosition() {
-        if(!mSwipeStack.isEnabled()) {
+        if (!mSwipeStack.isEnabled()) {
             resetViewPosition();
             return;
         }
@@ -206,4 +236,36 @@ public class SwipeHelper implements View.OnTouchListener {
         swipeViewToRight(mAnimationDuration);
     }
 
+    private class SingleTapConfirm implements GestureDetector.OnGestureListener {
+
+        @Override
+        public boolean onDown(MotionEvent e) {
+            return false;
+        }
+
+        @Override
+        public void onShowPress(MotionEvent e) {
+
+        }
+
+        @Override
+        public boolean onSingleTapUp(MotionEvent e) {
+            return false;
+        }
+
+        @Override
+        public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+            return false;
+        }
+
+        @Override
+        public void onLongPress(MotionEvent e) {
+
+        }
+
+        @Override
+        public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+            return false;
+        }
+    }
 }

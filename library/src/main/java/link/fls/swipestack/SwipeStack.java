@@ -120,7 +120,7 @@ public class SwipeStack extends ViewGroup {
         setClipToPadding(false);
         setClipChildren(false);
 
-        mSwipeHelper = new SwipeHelper(this);
+        mSwipeHelper = new SwipeHelper(getContext(), this);
         mSwipeHelper.setAnimationDuration(mAnimationDuration);
         mSwipeHelper.setRotation(mSwipeRotation);
         mSwipeHelper.setOpacityEnd(mSwipeOpacity);
@@ -212,6 +212,7 @@ public class SwipeStack extends ViewGroup {
             addViewInLayout(bottomView, 0, params, true);
 
             mCurrentViewIndex++;
+
         }
     }
 
@@ -308,6 +309,10 @@ public class SwipeStack extends ViewGroup {
     public void onViewSwipedToRight() {
         if (mListener != null) mListener.onViewSwipedToRight(getCurrentPosition());
         removeTopView();
+    }
+
+    public void onSwipeTap() {
+        if (mListener != null) mListener.onStackTap();
     }
 
     /**
@@ -438,6 +443,8 @@ public class SwipeStack extends ViewGroup {
          * Called when the last view has been dismissed.
          */
         void onStackEmpty();
+
+        void onStackTap();
     }
 
     /**

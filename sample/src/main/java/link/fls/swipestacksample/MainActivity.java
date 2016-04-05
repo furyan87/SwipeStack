@@ -130,6 +130,11 @@ public class MainActivity extends AppCompatActivity implements SwipeStack.SwipeS
         Toast.makeText(this, R.string.stack_empty, Toast.LENGTH_SHORT).show();
     }
 
+    @Override
+    public void onStackTap() {
+        Toast.makeText(this, "on stack single tap", Toast.LENGTH_SHORT).show();
+    }
+
     public class SwipeStackAdapter extends BaseAdapter {
 
         private List<String> mData;
@@ -160,6 +165,12 @@ public class MainActivity extends AppCompatActivity implements SwipeStack.SwipeS
             }
 
             TextView textViewCard = (TextView) convertView.findViewById(R.id.textViewCard);
+            textViewCard.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Toast.makeText(v.getContext(), "on view clicked", Toast.LENGTH_SHORT).show();
+                }
+            });
             textViewCard.setText(mData.get(position));
 
             return convertView;
